@@ -10,10 +10,12 @@ namespace MedReminder.API
             var builder = WebApplication.CreateBuilder(args);
 
             // Add connections to db
-            builder.Services.AddScoped<SymptomRepositorySqliteCtx>(_ => new SymptomRepositorySqliteCtx("Data Source=medreminder.db"));
+            builder.Services.AddScoped<SymptomRepoSqliteContext>(_ => new SymptomRepoSqliteContext("Data Source=medreminder.db"));
+            builder.Services.AddScoped<StageRepoSqliteContext>(_ => new StageRepoSqliteContext("Data Source=medreminder.db"));
 
             // Add connection to enterprise 
             builder.Services.AddScoped<SymptomEC>();
+
             
 
             builder.Services.AddControllers();
@@ -22,6 +24,13 @@ namespace MedReminder.API
             builder.Services.AddSwaggerGen();
 
             var app = builder.Build();
+
+            // Initialize both database contexts to ensure all tables are created
+            using (var scope = app.Services.CreateScope())
+            {
+                var symptomRepo = scope.ServiceProvider.GetRequiredService<SymptomRepoSqliteContext>();
+                var stageRepo = scope.ServiceProvider.GetRequiredService<StageRepoSqliteContext>();
+            }
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
@@ -33,7 +42,6 @@ namespace MedReminder.API
             app.UseHttpsRedirection();
 
             app.UseAuthorization();
-
 
             app.MapControllers();
 

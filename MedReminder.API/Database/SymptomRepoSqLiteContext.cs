@@ -1,16 +1,18 @@
+using System;
 using MedReminder.Library.Models; 
 using Microsoft.Data.Sqlite;
 using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore.Migrations.Operations;
 
 namespace MedReminder.API.Database
 {
-    public class SymptomRepositorySqliteCtx
+    public class SymptomRepoSqliteContext
     {
         private readonly string _connectionString;
 
-        public SymptomRepositorySqliteCtx(string connectionString)
+        public SymptomRepoSqliteContext(string connectionString)
         {
-            _connectionString = connectionString;;
+            _connectionString = connectionString; ;
             InitializeDatabase();
         }
 
@@ -24,7 +26,7 @@ namespace MedReminder.API.Database
                 CREATE TABLE IF NOT EXISTS Symptoms (
                     Id INTEGER PRIMARY KEY AUTOINCREMENT,
                     Name TEXT NOT NULL,
-                    IsActive BOOLEAN NOT NULL DEFAULT 1
+                    IsActive BOOLEAN NOT NULL DEFAULT 0
                 );
             ";
             command.ExecuteNonQuery();
@@ -58,22 +60,50 @@ namespace MedReminder.API.Database
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
 
-            var command = connection.CreateCommand();
-            command.CommandText = "SELECT * FROM Symptoms WHERE Id = @id";
-            command.Parameters.AddWithValue("@id", id);
+            Symptom? symptom = null;
 
-            using var reader = command.ExecuteReader();
-            if (reader.Read())
+            // Get symptom
+            using (var command = connection.CreateCommand())
             {
-                return new Symptom
+                command.CommandText = "SELECT Id, Name, IsActive FROM Symptoms WHERE Id = @id;";
+                command.Parameters.AddWithValue("@id", id);
+
+                using var reader = command.ExecuteReader();
+                if (reader.Read())
                 {
-                    Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                    Name = reader.GetString(reader.GetOrdinal("Name")),
-                    IsActive = reader.GetBoolean(reader.GetOrdinal("IsActive")),
-                };
+                    symptom = new Symptom
+                    {
+                        Id = reader.GetInt32(0),
+                        Name = reader.GetString(1),
+                        IsActive = reader.GetBoolean(2),
+                        Stages = new List<Stage>()
+                    };
+                }
             }
-            return null;
+
+            // Get stages for this symptom
+            if (symptom != null)
+            {
+                using var stageCommand = connection.CreateCommand();
+                stageCommand.CommandText = "SELECT Id, Name, SymptomId FROM Stages WHERE SymptomId = @symptomId;";
+                stageCommand.Parameters.AddWithValue("@symptomId", id);
+
+                using var stageReader = stageCommand.ExecuteReader();
+                while (stageReader.Read())
+                {
+                    symptom.Stages?.Add(new Stage
+                    {
+                        Id = stageReader.GetInt32(0),
+                        Name = stageReader.GetString(1),
+                        SymptomId = stageReader.GetInt32(2)
+                    });
+                }
+            }
+
+            return symptom;
         }
+
+        
 
         public Symptom AddOrUpdate(Symptom symptom)
         {
@@ -100,6 +130,9 @@ namespace MedReminder.API.Database
 
                 var result = command.ExecuteScalar();
                 symptom.Id = Convert.ToInt32(result);
+
+                
+                InsertDefaultStages((int)symptom.Id!);
             }
             else
             {
@@ -120,8 +153,6 @@ namespace MedReminder.API.Database
             return symptom;
         }
 
-
-
         public bool Delete(int id)
         {
             using var connection = new SqliteConnection(_connectionString);
@@ -133,6 +164,30 @@ namespace MedReminder.API.Database
 
             var affectedRows = command.ExecuteNonQuery();
             return affectedRows > 0;
+        }
+
+        private void InsertDefaultStages(int SymptomId)
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+
+            var stageNames = new[] { "Early", "Mid", "Severe" };
+
+            foreach (var stageName in stageNames)
+            {
+                using var stageCommand = connection.CreateCommand();
+
+                stageCommand.CommandText = @"
+                    INSERT INTO Stages (Name, SymptomId)
+                    VALUES (@name, @SymptomId)
+                ";
+
+                stageCommand.Parameters.AddWithValue("@name", stageName); // Fixed: use stageName instead of stageNames
+                stageCommand.Parameters.AddWithValue("@SymptomId", SymptomId);
+
+                stageCommand.ExecuteNonQuery();
+            }
+
         }
     }
 }

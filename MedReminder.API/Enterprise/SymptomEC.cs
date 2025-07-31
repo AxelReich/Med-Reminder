@@ -6,9 +6,9 @@ namespace MedReminder.API.Enterprise
 {
     public class SymptomEC
     {
-        private readonly SymptomRepositorySqliteCtx _symptomRepository;
+        private readonly SymptomRepoSqliteContext _symptomRepository;
 
-        public SymptomEC(SymptomRepositorySqliteCtx symptomRepository)
+        public SymptomEC(SymptomRepoSqliteContext symptomRepository)
         {
             _symptomRepository = symptomRepository;
         }
@@ -25,7 +25,6 @@ namespace MedReminder.API.Enterprise
 
         public Symptom AddOrUpdateSymptom(Symptom symptom)
         {
-            // Example business logic: validate name is not empty
             if (string.IsNullOrWhiteSpace(symptom.Name))
             {
                 throw new ArgumentException("Symptom name cannot be empty.");
