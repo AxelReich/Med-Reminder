@@ -21,10 +21,4 @@
     <ProjectReference Include="..\MedReminder.Library\MedReminder.Library.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Controllers/" />
-    <Folder Include="Database/" />
-    <Folder Include="Enterprise/" />
-  </ItemGroup>
-
 </Project>
