@@ -6,9 +6,9 @@ namespace MedReminder.API.Enterprise
 {
     public class SymptomEC
     {
-        private readonly SymptomRepository _symptomRepository;
+        private readonly SymptomRepositorySqliteCtx _symptomRepository;
 
-        public SymptomEC(SymptomRepository symptomRepository)
+        public SymptomEC(SymptomRepositorySqliteCtx symptomRepository)
         {
             _symptomRepository = symptomRepository;
         }

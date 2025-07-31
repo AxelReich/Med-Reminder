@@ -1,4 +1,7 @@
-namespace Asana.API
+using MedReminder.API.Database;
+using MedReminder.API.Enterprise;
+
+namespace MedReminder.API
 {
     public class Program
     {
@@ -6,7 +9,12 @@ namespace Asana.API
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
+            // Add connections to db
+            builder.Services.AddScoped<SymptomRepositorySqliteCtx>(_ => new SymptomRepositorySqliteCtx("Data Source=medreminder.db"));
+
+            // Add connection to enterprise 
+            builder.Services.AddScoped<SymptomEC>();
+            
 
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

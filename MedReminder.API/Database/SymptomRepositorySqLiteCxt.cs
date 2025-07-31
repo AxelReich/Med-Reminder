@@ -4,15 +4,31 @@ using System.Collections.Generic;
 
 namespace MedReminder.API.Database
 {
-    public class SymptomRepository
+    public class SymptomRepositorySqliteCtx
     {
         private readonly string _connectionString;
 
-        public SymptomRepository(string connectionString)
+        public SymptomRepositorySqliteCtx(string connectionString)
         {
-            _connectionString = connectionString;
+            _connectionString = connectionString;;
+            InitializeDatabase();
         }
 
+        private void InitializeDatabase()
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+
+            var command = connection.CreateCommand();
+            command.CommandText = @"
+                CREATE TABLE IF NOT EXISTS Symptoms (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Name TEXT NOT NULL,
+                    IsActive BOOLEAN NOT NULL DEFAULT 1
+                );
+            ";
+            command.ExecuteNonQuery();
+        }
         public List<Symptom> GetAll()
         {
             var symptoms = new List<Symptom>();
@@ -64,30 +80,37 @@ namespace MedReminder.API.Database
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
 
-            var command = connection.CreateCommand();
+            using var command = connection.CreateCommand();
 
             if (symptom.Id <= 0)
             {
+                // Insert symptom
                 command.CommandText = @"
                     INSERT INTO Symptoms (Name, IsActive)
-                    VALUES (@name, @isActive);
-                    SELECT last_insert_rowid();";
+                    VALUES (@name, @isActive);";
 
-                command.Parameters.AddWithValue("@name", symptom.Name);
+                command.Parameters.AddWithValue("@name", symptom.Name ?? string.Empty);
                 command.Parameters.AddWithValue("@isActive", symptom.IsActive);
+
+                command.ExecuteNonQuery();
+
+                // Get last inserted ID
+                command.CommandText = "SELECT last_insert_rowid();";
+                command.Parameters.Clear();
 
                 var result = command.ExecuteScalar();
                 symptom.Id = Convert.ToInt32(result);
             }
             else
             {
+                // Update symptom
                 command.CommandText = @"
                     UPDATE Symptoms
                     SET Name = @name,
                         IsActive = @isActive
-                    WHERE Id = @id";
+                    WHERE Id = @id;";
 
-                command.Parameters.AddWithValue("@name", symptom.Name);
+                command.Parameters.AddWithValue("@name", symptom.Name ?? string.Empty);
                 command.Parameters.AddWithValue("@isActive", symptom.IsActive);
                 command.Parameters.AddWithValue("@id", symptom.Id);
 
@@ -96,6 +119,8 @@ namespace MedReminder.API.Database
 
             return symptom;
         }
+
+
 
         public bool Delete(int id)
         {
