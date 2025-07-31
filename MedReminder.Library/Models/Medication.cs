@@ -16,19 +16,20 @@ namespace MedReminder.Library.Models
         public string Name { get; set; } = string.Empty;
 
         [Range(1, int.MaxValue)]
-        public int IntervalHours { get; set; }
+        public int? IntervalHours { get; set; }
 
         [Range(1, int.MaxValue)]
-        public int TotalDays { get; set; }
+        public int? TotalDays { get; set; }
 
         [Range(1, 10000)]
-        public int QuantityMg { get; set; }
+        public int? QuantityMg { get; set; }
 
-        public int TreatmentId { get; set; }
+        public int? TreatmentId { get; set; }
 
-        public Treatment Treatment { get; set; } = null!;
+        public int? StageId { get; set; }                        
 
-        public List<MedicationDose> Doses { get; set; } = new();
+        public Stage? Stage { get; set; }
+        public List<MedicationIntake>? Intakes { get; set; }
     }
 }
 
