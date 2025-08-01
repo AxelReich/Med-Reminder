@@ -49,7 +49,6 @@ namespace MedReminder.API.Database
                     Id = reader.GetInt32(reader.GetOrdinal("Id")),
                     Name = reader.GetString(reader.GetOrdinal("Name")),
                     IsActive = reader.GetBoolean(reader.GetOrdinal("IsActive")),
-                    // Add other fields as needed
                 });
             }
             return symptoms;
@@ -81,7 +80,7 @@ namespace MedReminder.API.Database
                 }
             }
 
-            // Get stages for this symptom
+            // Get stages for this symptom and medication
             if (symptom != null)
             {
                 using var stageCommand = connection.CreateCommand();
@@ -91,15 +90,21 @@ namespace MedReminder.API.Database
                 using var stageReader = stageCommand.ExecuteReader();
                 while (stageReader.Read())
                 {
-                    symptom.Stages?.Add(new Stage
+                    var stage = new Stage
                     {
                         Id = stageReader.GetInt32(0),
                         Name = stageReader.GetString(1),
-                        SymptomId = stageReader.GetInt32(2)
-                    });
+                        SymptomId = stageReader.GetInt32(2),
+                        Medication = new List<Medication>() // Initialize medication list
+                    };
+
+                    // NEW: fetch medications for each stage
+                    var medicationRepo = new MedicationRepoSqliteContext(_connectionString);
+                    stage.Medication = medicationRepo.GetByStageId(stage.Id);
+
+                    symptom.Stages?.Add(stage);
                 }
             }
-
             return symptom;
         }
 
@@ -131,8 +136,11 @@ namespace MedReminder.API.Database
                 var result = command.ExecuteScalar();
                 symptom.Id = Convert.ToInt32(result);
 
-                
+
                 InsertDefaultStages((int)symptom.Id!);
+
+                var stageRepo = new StageRepoSqliteContext(_connectionString);
+                symptom.Stages = stageRepo.GetBySymptomId((int)symptom.Id!);
             }
             else
             {
@@ -182,7 +190,7 @@ namespace MedReminder.API.Database
                     VALUES (@name, @SymptomId)
                 ";
 
-                stageCommand.Parameters.AddWithValue("@name", stageName); // Fixed: use stageName instead of stageNames
+                stageCommand.Parameters.AddWithValue("@name", stageName); 
                 stageCommand.Parameters.AddWithValue("@SymptomId", SymptomId);
 
                 stageCommand.ExecuteNonQuery();
