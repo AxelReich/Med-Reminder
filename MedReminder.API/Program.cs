@@ -12,9 +12,13 @@ namespace MedReminder.API
             // Add connections to db
             builder.Services.AddScoped<SymptomRepoSqliteContext>(_ => new SymptomRepoSqliteContext("Data Source=medreminder.db"));
             builder.Services.AddScoped<StageRepoSqliteContext>(_ => new StageRepoSqliteContext("Data Source=medreminder.db"));
+            builder.Services.AddScoped<MedicationRepoSqliteContext>(_ => new MedicationRepoSqliteContext("Data Source=medreminder.db"));
+
 
             // Add connection to enterprise 
             builder.Services.AddScoped<SymptomEC>();
+            builder.Services.AddScoped<MedicationEC>();
+
 
             
 
@@ -30,6 +34,7 @@ namespace MedReminder.API
             {
                 var symptomRepo = scope.ServiceProvider.GetRequiredService<SymptomRepoSqliteContext>();
                 var stageRepo = scope.ServiceProvider.GetRequiredService<StageRepoSqliteContext>();
+                var medRepo = scope.ServiceProvider.GetRequiredService<MedicationRepoSqliteContext>();
             }
 
             // Configure the HTTP request pipeline.
